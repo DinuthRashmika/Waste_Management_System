@@ -7,12 +7,13 @@ import 'leaflet-routing-machine'; // Import routing machine for directions
 import { Html5QrcodeScanner } from 'html5-qrcode'; // Import the QR Code scanner
 import GarbageForm from './garbageforms';
 
-
 const RequestMapView = () => {
     const { requestId } = useParams(); // Get requestId from URL params
     const [requestDetails, setRequestDetails] = useState(null);
     const [lat, setLat] = useState(null);
     const [lng, setLng] = useState(null);
+    const [userLat, setUserLat] = useState(null); // Store user's latitude
+    const [userLng, setUserLng] = useState(null); // Store user's longitude
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [map, setMap] = useState(null);
@@ -20,6 +21,23 @@ const RequestMapView = () => {
     const [scannedData, setScannedData] = useState(null); // Store scanned QR data
 
     const navigate = useNavigate();
+
+    // Request user's location
+    useEffect(() => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    setUserLat(position.coords.latitude);
+                    setUserLng(position.coords.longitude);
+                },
+                (error) => {
+                    setError('Failed to get current location: ' + error.message);
+                }
+            );
+        } else {
+            setError('Geolocation is not supported by your browser.');
+        }
+    }, []);
 
     useEffect(() => {
         const fetchRequestDetails = async () => {
@@ -61,26 +79,39 @@ const RequestMapView = () => {
 
     // Initialize the map
     useEffect(() => {
-        if (lat && lng && !map) {
-            const mapInstance = L.map('map').setView([lat, lng], 13); // Set view with lat, lng
+        if (lat && lng && !map && document.getElementById('map')) {
+            // Initialize the map only once
+            const mapInstance = L.map('map').setView([lat, lng], 13); // Set view with lat and lng
             setMap(mapInstance);
 
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                attribution: '&copy; OpenStreetMap contributors',
             }).addTo(mapInstance);
 
             // Marker for the destination (request address)
             L.marker([lat, lng]).addTo(mapInstance).bindPopup('Request Location').openPopup();
+
+            if (userLat && userLng) {
+                // Add route from user's location to destination if available
+                L.Routing.control({
+                    waypoints: [
+                        L.latLng(userLat, userLng), // User's current location
+                        L.latLng(lat, lng),         // Request location
+                    ],
+                    routeWhileDragging: true,
+                }).addTo(mapInstance);
+            }
         }
 
         // Cleanup function to remove the map on unmount
         return () => {
             if (map) {
-                map.remove();
+                map.off();    // Remove all map event listeners
+                map.remove(); // Properly remove the map
                 setMap(null); // Clear map reference
             }
         };
-    }, [lat, lng, map]);
+    }, [lat, lng, userLat, userLng, map]);
 
     // Function to initialize the QR code scanner
     const initializeQrScanner = () => {
@@ -91,7 +122,7 @@ const RequestMapView = () => {
     // Function called on QR code scan success
     const onScanSuccess = (decodedText, decodedResult) => {
         setScannedData(decodedText); // Store scanned data
-        setShowScanner(false); // Hide scanner after scanning
+        setShowScanner(false);       // Hide scanner after scanning
         alert(`QR Code Scanned: ${decodedText}`);
     };
 
@@ -169,7 +200,7 @@ const RequestMapView = () => {
                     )}
                 </>
             )}
-            <GarbageForm/>
+            <GarbageForm />
         </div>
     );
 };

@@ -111,3 +111,136 @@ exports.getUserDetails = async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 };
+
+
+ 
+
+// Add a new collector
+exports.addCollector = async (req, res) => {
+    const { name, email, password } = req.body;
+
+    // Check if all required fields are provided
+    if (!name || !password) {
+        return res.status(400).json({ message: 'Name and password are required.' });
+    }
+
+    try {
+        // Check if a user with the given email already exists
+        if (email) {
+            const existingUser = await User.findOne({ email });
+            if (existingUser) {
+                return res.status(400).json({ message: 'User with this email already exists.' });
+            }
+        }
+
+        // Hash the password before saving
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Create a new user with the role of 'collector'
+        const newCollector = new User({
+            name,
+            email,
+            password: hashedPassword,
+            role: 'collector', // Assign the role as 'collector'
+        });
+
+        // Save the new collector to the database
+        await newCollector.save();
+
+        // Respond with a success message
+        res.status(201).json({ message: 'Collector added successfully!', collector: newCollector });
+    } catch (error) {
+        console.error('Error adding collector:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+// Get all users with the role 'collector'
+exports.getAllCollectors = async (req, res) => {
+  try {
+    // Find all users where role is 'collector'
+    const collectors = await User.find({ role: 'collector' }, 'name email addresses'); // Select only name, email, and addresses
+
+    // Check if any collectors are found
+    if (collectors.length === 0) {
+      return res.status(404).json({ message: 'No collectors found.' });
+    }
+
+    // Return the list of collectors
+    res.status(200).json(collectors);
+  } catch (error) {
+    console.error('Error fetching collectors:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+
+exports.getAllCollectors = async (req, res) => {
+  try {
+    // Find all users where role is 'collector'
+    const collectors = await User.find({ role: 'collector' }, 'name email addresses'); // Select only name, email, and addresses
+
+    // Check if any collectors are found
+    if (collectors.length === 0) {
+      return res.status(404).json({ message: 'No collectors found.' });
+    }
+
+    // Return the list of collectors
+    res.status(200).json(collectors);
+  } catch (error) {
+    console.error('Error fetching collectors:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//Fetch all users
+exports.getAllUsers = async (req, res) => {
+    try {
+        const users = await User.find({}, 'name _id'); // Fetch only the name and _id fields
+        res.status(200).json({ users });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching users', error });
+    }
+};
+
+
+
+
+
+ 

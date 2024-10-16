@@ -55,7 +55,7 @@ const AddressSelection = () => {
             await axios.post('http://localhost:4000/api/requests', { address: selectedAddress }, config);
             alert('Request made successfully!');
 
-            navigate('/dashboard'); // Redirect back to the dashboard
+            navigate('/customerdashboard'); // Redirect back to the dashboard
         } catch (error) {
             setError('Error making request: ' + (error.response?.data?.message || error.message));
         }

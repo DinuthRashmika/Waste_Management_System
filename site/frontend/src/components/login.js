@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import {useNavigate} from "react-router-dom"
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
     const [name, setName] = useState(''); // For username
     const [password, setPassword] = useState(''); // For password
     const [message, setMessage] = useState(''); // For messages
     const [showPopup, setShowPopup] = useState(false); // For popup visibility
-    const navigate = useNavigate()
+    const navigate = useNavigate();
 
     const handleLogin = async (e) => {
         e.preventDefault(); // Prevent default form submission
@@ -28,12 +28,12 @@ const Login = () => {
             setShowPopup(true); // Show the success popup
             setMessage('Login successful!');
 
-
             // Redirect based on the user's role
             if (user.role === 'admin') {
                 navigate('/admindashboard'); // Navigate to Admin Dashboard
             } else if (user.role === 'collector') {
-                navigate('/collectordashboard'); // Navigate to Collector Dashboard
+                navigate('/collecterdashboard');
+                 // Navigate to Collector Dashboard
             } else {
                 navigate('/customerdashboard'); // Navigate to Customer Dashboard
             }
@@ -48,6 +48,11 @@ const Login = () => {
 
     const closePopup = () => {
         setShowPopup(false); // Close the popup
+    };
+
+    // Handle the sign-in navigation
+    const handleSignIn = () => {
+        navigate('/signin'); // Navigate to the sign-in page
     };
 
     return (
@@ -90,6 +95,16 @@ const Login = () => {
                         Login
                     </button>
                 </form>
+            </div>
+
+            {/* Sign-in button */}
+            <div className="mt-4">
+                <button
+                    className="text-blue-500 hover:text-blue-700 transition-colors"
+                    onClick={handleSignIn} // Navigate to the sign-in page
+                >
+                    Don't have an account? Sign In
+                </button>
             </div>
 
             <p className="mt-6 text-sm text-gray-500">Smart Waste Management System.</p>
