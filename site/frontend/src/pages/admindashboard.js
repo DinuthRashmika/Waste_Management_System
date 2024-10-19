@@ -30,7 +30,7 @@ const AdminDashboard = () => {
   const [selectedCollectorId, setSelectedCollectorId] = useState(''); // For storing selected collector
   const [view, setView] = useState('dashboard'); // 'dashboard', 'users', 'collectors', 'report'
   const [showAddCollectorModal, setShowAddCollectorModal] = useState(false); // For adding collectors
-  const [newCollector, setNewCollector] = useState({ name: '', email: '', password: '' }); // Collector form data
+  const [newCollector, setNewCollector] = useState({ name: '', email: '', role:'collector',password: '' }); // Collector form data
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -60,7 +60,7 @@ const AdminDashboard = () => {
 
         setIsLoading(false);
       } catch (err) {
-        setError('Error fetching data: ' + (err.response?.data?.message || err.message));
+        
         console.error('Error fetching data:', err);
         setCollectors([]); // Ensure collectors is an array even if the API call fails
         setUsers([]); // Ensure users is an array even if the API call fails
@@ -142,7 +142,7 @@ const AdminDashboard = () => {
       };
 
       // Add the new collector
-      const response = await axios.post('http://localhost:4000/api/admin/collectors', newCollector, config);
+      const response = await axios.post('http://localhost:4000/api/signup', newCollector, config);
 
       alert('Collector added successfully');
 
