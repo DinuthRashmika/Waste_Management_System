@@ -1,5 +1,14 @@
 const Address = require('../model/adress');
-const User = require('../model/user'); // Assuming you have a User model for linking
+const User = require('../model/user');
+
+// Factory function to create a new Address instance
+const addressFactory = (userId, address, monthlyPayment) => {
+    return new Address({
+        user: userId,
+        address: address,
+        monthlyPayment: monthlyPayment || 3190, // Default to 3190 if not provided
+    });
+};
 
 // Add a new tenant address
 exports.addNewAddress = async (req, res) => {
@@ -11,12 +20,8 @@ exports.addNewAddress = async (req, res) => {
             return res.status(400).json({ message: 'Address is required.' });
         }
 
-        // Create a new address
-        const newAddress = new Address({
-            user: userId,
-            address: address,
-            monthlyPayment: monthlyPayment || 3190, // Default to 3190 if not provided
-        });
+        // Use the factory function to create a new address
+        const newAddress = addressFactory(userId, address, monthlyPayment);
 
         await newAddress.save();
 

@@ -1,5 +1,17 @@
 const Address = require('../model/adress');
 
+// Command for handling payments
+class PaymentCommand {
+    constructor(address) {
+        this.address = address;
+    }
+
+    execute() {
+        this.address.monthlyPayment = 0; // Reset monthly payment to 0
+        return this.address.save(); // Save the updated address
+    }
+}
+
 // Handle Payment and Reset Monthly Payment
 exports.handlePayment = async (req, res) => {
     const { userId, addressId } = req.body; // Now receiving both userId and addressId
@@ -12,9 +24,9 @@ exports.handlePayment = async (req, res) => {
             return res.status(404).json({ message: 'Address not found' });
         }
 
-        // Reset monthly payment to 0 after a successful payment
-        address.monthlyPayment = 0;
-        await address.save();
+        // Create and execute the payment command
+        const paymentCommand = new PaymentCommand(address);
+        await paymentCommand.execute();
 
         res.status(200).json({ message: 'Payment successful, monthly payment reset to 0' });
     } catch (error) {
