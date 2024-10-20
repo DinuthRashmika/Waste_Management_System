@@ -2,6 +2,83 @@ const User = require('../model/user');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
+// Facade for User operations
+class UserFacade {
+    async signup(name, password, email, role) {
+        const existingUser = await User.findOne({ $or: [{ name }, { email }] });
+        if (existingUser) {
+            throw new Error('User with this name or email already exists');
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const user = new User({
+            name,
+            password: hashedPassword,
+            email,
+            role: role || 'user',
+        });
+
+        await user.save();
+        return user;
+    }
+
+    async login(name, password) {
+        const user = await User.findOne({ name });
+        if (!user) {
+            throw new Error('Invalid credentials');
+        }
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            throw new Error('Invalid credentials');
+        }
+
+        return user;
+    }
+
+    async getUserDetails(userId) {
+        const user = await User.findById(userId).select('-password').populate('addresses');
+        if (!user) {
+            throw new Error('User not found');
+        }
+        return user;
+    }
+
+    async addCollector(name, email, password) {
+        if (email) {
+            const existingUser = await User.findOne({ email });
+            if (existingUser) {
+                throw new Error('User with this email already exists.');
+            }
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const newCollector = new User({
+            name,
+            email,
+            password: hashedPassword,
+            role: 'collector',
+        });
+
+        await newCollector.save();
+        return newCollector;
+    }
+
+    async getAllCollectors() {
+        const collectors = await User.find({ role: 'collector' }, 'name email addresses');
+        if (collectors.length === 0) {
+            throw new Error('No collectors found.');
+        }
+        return collectors;
+    }
+
+    async getAllUsers() {
+        return await User.find({}, 'name _id');
+    }
+}
+
+const userFacade = new UserFacade();
+
 // Signup a new user
 exports.signup = async (req, res) => {
     try {
@@ -12,22 +89,8 @@ exports.signup = async (req, res) => {
             return res.status(400).json({ message: 'Name and password are required.' });
         }
 
-        // Check if a user with the given name or email exists
-        const existingUser = await User.findOne({ $or: [{ name }, { email }] });
-        if (existingUser) {
-            return res.status(400).json({ message: 'User with this name or email already exists' });
-        }
-
-        // Hash the password and create the user
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const user = new User({
-            name,
-            password: hashedPassword,
-            email,
-            role: role || 'user',
-        });
-
-        await user.save();
+        // Use facade to handle signup logic
+        const user = await userFacade.signup(name, password, email, role);
 
         // Generate JWT
         const token = jwt.sign(
@@ -43,7 +106,7 @@ exports.signup = async (req, res) => {
         });
     } catch (error) {
         console.error('Error during user signup:', error);
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: error.message });
     }
 };
 
@@ -57,17 +120,8 @@ exports.login = async (req, res) => {
             return res.status(400).json({ message: 'Name and password are required.' });
         }
 
-        // Find the user by name
-        const user = await User.findOne({ name });
-        if (!user) {
-            return res.status(400).json({ message: 'Invalid credentials' });
-        }
-
-        // Compare provided password with stored hashed password
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-            return res.status(400).json({ message: 'Invalid credentials' });
-        }
+        // Use facade to handle login logic
+        const user = await userFacade.login(name, password);
 
         // Generate JWT
         const token = jwt.sign(
@@ -88,32 +142,23 @@ exports.login = async (req, res) => {
         });
     } catch (error) {
         console.error('Error during login:', error);
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: error.message });
     }
 };
-
-
 
 // Get user details by ID
 exports.getUserDetails = async (req, res) => {
     try {
         const userId = req.params.id;
 
-        // Fetch user details by ID without the password field
-        const user = await User.findById(userId).select('-password').populate('addresses');
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-
+        // Use facade to get user details
+        const user = await userFacade.getUserDetails(userId);
         res.status(200).json(user);
     } catch (error) {
         console.error('Error fetching user details:', error);
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: error.message });
     }
 };
-
-
- 
 
 // Add a new collector
 exports.addCollector = async (req, res) => {
@@ -125,122 +170,39 @@ exports.addCollector = async (req, res) => {
     }
 
     try {
-        // Check if a user with the given email already exists
-        if (email) {
-            const existingUser = await User.findOne({ email });
-            if (existingUser) {
-                return res.status(400).json({ message: 'User with this email already exists.' });
-            }
-        }
-
-        // Hash the password before saving
-        const hashedPassword = await bcrypt.hash(password, 10);
-
-        // Create a new user with the role of 'collector'
-        const newCollector = new User({
-            name,
-            email,
-            password: hashedPassword,
-            role: 'collector', // Assign the role as 'collector'
-        });
-
-        // Save the new collector to the database
-        await newCollector.save();
+        // Use facade to add a new collector
+        const newCollector = await userFacade.addCollector(name, email, password);
 
         // Respond with a success message
         res.status(201).json({ message: 'Collector added successfully!', collector: newCollector });
     } catch (error) {
         console.error('Error adding collector:', error);
-        res.status(500).json({ message: 'Server error', error: error.message });
+        res.status(500).json({ message: error.message });
     }
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
- 
 
 // Get all users with the role 'collector'
 exports.getAllCollectors = async (req, res) => {
-  try {
-    // Find all users where role is 'collector'
-    const collectors = await User.find({ role: 'collector' }, 'name email addresses'); // Select only name, email, and addresses
+    try {
+        // Use facade to get all collectors
+        const collectors = await userFacade.getAllCollectors();
 
-    // Check if any collectors are found
-    if (collectors.length === 0) {
-      return res.status(404).json({ message: 'No collectors found.' });
+        // Return the list of collectors
+        res.status(200).json(collectors);
+    } catch (error) {
+        console.error('Error fetching collectors:', error);
+        res.status(500).json({ message: error.message });
     }
-
-    // Return the list of collectors
-    res.status(200).json(collectors);
-  } catch (error) {
-    console.error('Error fetching collectors:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
-  }
 };
 
-
-exports.getAllCollectors = async (req, res) => {
-  try {
-    // Find all users where role is 'collector'
-    const collectors = await User.find({ role: 'collector' }, 'name email addresses'); // Select only name, email, and addresses
-
-    // Check if any collectors are found
-    if (collectors.length === 0) {
-      return res.status(404).json({ message: 'No collectors found.' });
-    }
-
-    // Return the list of collectors
-    res.status(200).json(collectors);
-  } catch (error) {
-    console.error('Error fetching collectors:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
-  }
-};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//Fetch all users
+// Fetch all users
 exports.getAllUsers = async (req, res) => {
     try {
-        const users = await User.find({}, 'name _id'); // Fetch only the name and _id fields
+        // Use facade to get all users
+        const users = await userFacade.getAllUsers();
         res.status(200).json({ users });
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching users', error });
+        console.error('Error fetching users:', error);
+        res.status(500).json({ message: error.message });
     }
 };
-
-
-
-
-
- 
