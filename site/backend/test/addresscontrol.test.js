@@ -49,10 +49,11 @@ describe('Address Controller', () => {
 
             expect(Address.prototype.save).toHaveBeenCalled();
             expect(res.status).toHaveBeenCalledWith(201);
-            // expect(res.json).toHaveBeenCalledWith({
-            //     message: 'Address added successfully',
-            //     address: mockAddress,
-            // });
+            //negitive-----------------------------------------------
+            expect(res.json).toHaveBeenCalledWith({
+                message: 'Address added successfully',
+                address: mockAddress,
+            });
         });
     });
 

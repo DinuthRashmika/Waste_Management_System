@@ -46,7 +46,7 @@ describe('Request Controller - handlePayment', () => {
 
             //await requestController.handlePayment(req, res);
 
-            //expect(mockAddress.monthlyPayment).toBe(0);
+           // expect(mockAddress.monthlyPayment).toBe(0);
             //expect(mockAddress.save).toHaveBeenCalled();
            // expect(res.status).toHaveBeenCalledWith(200);
             //expect(res.json).toHaveBeenCalledWith({ message: 'Payment successful, monthly payment reset to 0' });
